@@ -25,10 +25,7 @@ function Timeline(el, lanes, items, config) {
   }, config);
   c.innerHeight = c.height - c.margin.top - c.margin.bottom;
   c.innerWidth = c.width - c.margin.left - c.margin.right;
-  if (c.mini)
-    c.mainHeight = c.innerHeight - c.miniHeight - c.miniMargin;
-  else
-    c.mainHeight = c.innerHeight;
+  c.mainHeight = c.innerHeight;
   this.lanes = lanes;
   this.items = items;
   this.makeScales();
@@ -74,7 +71,7 @@ Timeline.prototype = {
       .attr('class', 'main');
 
     this.mini = this.chart.append('g')
-      .attr('transform', 'translate(' + c.margin.left + ',' + (c.mainHeight + c.miniMargin + 1) + ')')
+      .attr('transform', 'translate(' + c.margin.left + ',' + (c.mainHeight - 5 * c.miniMargin + 1) + ')')
       .attr('width', c.innerWidth)
       .attr('height', c.miniHeight)
       .attr('class', 'mini');
@@ -99,25 +96,6 @@ Timeline.prototype = {
       .attr('text-anchor', 'end')
       .attr('class', 'laneText');
 
-    // draw the lanes for the mini chart
-    this.mini.append('g').selectAll('.laneLines')
-      .data(this.lanes)
-      .enter().append('line')
-      .attr('x1', 0)
-      .attr('y1', function(d) { return d3.round(self.scales.y2(d.id)) + 0.5; })
-      .attr('x2', c.innerWidth)
-      .attr('y2', function(d) { return d3.round(self.scales.y2(d.id)) + 0.5; })
-      .attr('stroke', function(d) { return d.label === '' ? 'white' : 'lightgray'; });
-
-    this.mini.append('g').selectAll('.laneText')
-      .data(this.lanes)
-      .enter().append('text')
-      .text(function(d) { return d.title; })
-      .attr('x', -10)
-      .attr('y', function(d) { return self.scales.y2(d.id + 0.5); })
-      .attr('dy', '0.5ex')
-      .attr('text-anchor', 'end')
-      .attr('class', 'laneText');
   },
   makeAxes: function () {
     // draw the x axis
@@ -170,11 +148,6 @@ Timeline.prototype = {
       .attr('dy', 12);
       */
 
-    this.mini.append('g')
-      .attr('transform', 'translate(0,' + c.miniHeight + ')')
-      .attr('class', 'axis date')
-      .call(this.axes.date);
-
     /*
     this.mini.append('g')
       .attr('transform', 'translate(0,0.5)')
@@ -202,6 +175,50 @@ Timeline.prototype = {
     .attr('class', 'todayLine');
     */
 
+  scroll: function () {
+    var e = d3.event;
+    var ext = this.brush.extent()
+      , origin = d3.mouse(this.main[0][0])
+      , rng = ext[1] - ext[0]
+      , horiz = ext[0] - this.scales.x1.invert(e.wheelDeltaX)
+      , left = this.config.innerWidth / origin[0]
+      , right = this.config.innerWidth / (this.config.innerWidth - origin[0])
+      , start = ext[0]
+      , end = ext[1];
+
+    if (Math.abs(e.wheelDeltaX) > Math.abs(e.wheelDeltaY)) {
+      start += horiz;
+      end += horiz;
+    } else {
+      if (e.wheelDeltaY !== 0) {
+        if (!(rng <= 10 && e.wheelDeltaY > 0)) {
+          start += e.wheelDeltaY / left / 2;
+          end -= e.wheelDeltaY / right / 2;
+          if (end - start > (this.config.max - this.config.min)) {
+            end = start + (this.config.max - this.config.min);
+          }
+          if (end - start < 10) {
+            end = start + 10;
+          }
+        }
+      }
+    }
+
+    if (start < this.config.min) {
+      end += (this.config.min - start);
+      start = this.config.min;
+    } else if (end > this.config.max) {
+      start += this.config.max - end;
+      end = this.config.max;
+    }
+
+    this.brush.extent([start, end]);
+    this.display();
+    e.preventDefault();
+    e.stopPropagation();
+    return;
+  },
+
   drawMini: function () {
     var self = this
       , c = this.config;
@@ -209,20 +226,13 @@ Timeline.prototype = {
     this.itemRects = this.main.append('g')
       .attr('clip-path', 'url(#clip)');
 
-    this.mini.append('g').selectAll('miniItems')
-      .data(this.getPaths(this.items))
-      .enter().append('path')
-      .attr('class', function(d) { return 'miniItem ' + d.class; })
-      .attr('stroke', function (d) { return c.colors(d.class); })
-      .attr('d', function(d) { return d.path; });
-
     // invisible hit area to move around the selection window
-    this.mini.append('rect')
+    this.main.append('rect')
       .attr('pointer-events', 'painted')
       .attr('width', c.innerWidth)
-      .attr('height', c.miniHeight)
+      .attr('height', c.mainHeight)
       .attr('visibility', 'hidden')
-      .on('mouseup', this.moveBrush());
+      .on('mousewheel', this.scroll.bind(this));
 
     // draw the selection area
     this.brush = d3.svg.brush()
@@ -253,10 +263,10 @@ Timeline.prototype = {
 
     this.scales.x1.domain([minExtent, maxExtent]);
 
-    for (var i=0; i<this.config.tickFormats.length; i++) {
-      if (range > this.config.tickFormats[i][0]) {
-        this.axes.date1.tickFormat(this.config.tickFormats[i][1]);
-        this.axes.month1.tickFormat(this.config.tickFormats[i][1]);
+    for (var i=0; i<this.config.ticks.length; i++) {
+      if (range > this.config.ticks[i][0]) {
+        this.axes.date1.ticks(this.config.ticks[i][1]).tickFormat(this.config.ticks[i][2]);
+        this.axes.month1.ticks(this.config.ticks[i][1]).tickFormat(this.config.ticks[i][2]);
         break;
       }
     }
