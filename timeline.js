@@ -12,6 +12,7 @@ function Timeline(el, lanes, items, config) {
       bottom: 15,
       right: 15
     },
+    colors: d3.scale.category20(),
     width: 960,
     height: 500,
     mini: true,
@@ -35,19 +36,21 @@ function Timeline(el, lanes, items, config) {
   this.makeAxes();
   this.drawAxes();
   this.drawMini();
+  this.display();
 }
 
 Timeline.prototype = {
   makeScales: function () {
     var c = this.config
-      , ext = d3.extent(lanes, function(d) { return d.id; });
+      , ext = d3.extent(this.lanes, function(d) { return d.id; });
     this.scales = {
-      x: d3.scale.linear().domain([c.min, c.max]).range([0, c.width]),
+      x: d3.scale.linear().domain([c.min, c.max]).range([0, c.innerWidth]),
       x1: d3.scale.linear().range([0, c.width]),
       y1: d3.scale.linear().domain([ext[0], ext[1] + 1]).range([0, c.mainHeight]),
       y2: d3.scale.linear().domain([ext[0], ext[1] + 1]).range([0, c.miniHeight])
     };
   },
+
   makeSvg: function () {
     var c = this.config
       , self = this;
@@ -64,14 +67,14 @@ Timeline.prototype = {
       .attr('width', c.innerWidth)
       .attr('height', c.mainHeight);
 
-    this.main = chart.append('g')
+    this.main = this.chart.append('g')
       .attr('transform', 'translate(' + c.margin.left + ',' + c.margin.top + ')')
       .attr('width', c.innerWidth)
       .attr('height', c.mainHeight)
       .attr('class', 'main');
 
-    this.mini = chart.append('g')
-      .attr('transform', 'translate(' + c.margin.left + ',' + (c.mainHeight + c.miniMaegin + 1) + ')')
+    this.mini = this.chart.append('g')
+      .attr('transform', 'translate(' + c.margin.left + ',' + (c.mainHeight + c.miniMargin + 1) + ')')
       .attr('width', c.innerWidth)
       .attr('height', c.miniHeight)
       .attr('class', 'mini');
@@ -84,14 +87,14 @@ Timeline.prototype = {
       .attr('y1', function(d) { return d3.round(self.scales.y1(d.id)) + 0.5; })
       .attr('x2', c.innerWidth)
       .attr('y2', function(d) { return d3.round(self.scales.y1(d.id)) + 0.5; })
-      .attr('stroke', function(d) { return d.label === '' ? 'white' : 'lightgray' });
+      .attr('stroke', function(d) { return d.label === '' ? 'white' : 'lightgray'; });
 
     this.main.append('g').selectAll('.laneText')
       .data(this.lanes)
       .enter().append('text')
       .text(function(d) { return d.title; })
       .attr('x', -10)
-      .attr('y', function(d) { return self.scales.y1(d.id + .5); })
+      .attr('y', function(d) { return self.scales.y1(d.id + 0.5); })
       .attr('dy', '0.5ex')
       .attr('text-anchor', 'end')
       .attr('class', 'laneText');
@@ -102,21 +105,21 @@ Timeline.prototype = {
       .enter().append('line')
       .attr('x1', 0)
       .attr('y1', function(d) { return d3.round(self.scales.y2(d.id)) + 0.5; })
-      .attr('x2', width)
+      .attr('x2', c.innerWidth)
       .attr('y2', function(d) { return d3.round(self.scales.y2(d.id)) + 0.5; })
-      .attr('stroke', function(d) { return d.label === '' ? 'white' : 'lightgray' });
+      .attr('stroke', function(d) { return d.label === '' ? 'white' : 'lightgray'; });
 
     this.mini.append('g').selectAll('.laneText')
       .data(this.lanes)
       .enter().append('text')
       .text(function(d) { return d.title; })
       .attr('x', -10)
-      .attr('y', function(d) { return self.scales.y2(d.id + .5); })
+      .attr('y', function(d) { return self.scales.y2(d.id + 0.5); })
       .attr('dy', '0.5ex')
       .attr('text-anchor', 'end')
       .attr('class', 'laneText');
   },
-  makeD3Axes: function () {
+  makeAxes: function () {
     // draw the x axis
     this.axes = {
       date: d3.svg.axis()
@@ -146,38 +149,42 @@ Timeline.prototype = {
         .ticks(10)
         .tickFormat(this.config.tickFormat)
         .tickSize(15, 0, 0)
-    }
+    };
   },
 
   drawAxes: function () {
     var c = this.config;
 
-    main.append('g')
+    this.main.append('g')
       .attr('transform', 'translate(0,' + c.mainHeight + ')')
       .attr('class', 'main axis date')
       .call(this.axes.date1);
 
-    main.append('g')
+    /*
+    this.main.append('g')
       .attr('transform', 'translate(0,0.5)')
       .attr('class', 'main axis month')
       .call(this.axes.month1)
       .selectAll('text')
       .attr('dx', 5)
       .attr('dy', 12);
+      */
 
-    mini.append('g')
+    this.mini.append('g')
       .attr('transform', 'translate(0,' + c.miniHeight + ')')
       .attr('class', 'axis date')
       .call(this.axes.date);
 
-    mini.append('g')
+    /*
+    this.mini.append('g')
       .attr('transform', 'translate(0,0.5)')
       .attr('class', 'axis month')
       .call(this.axes.month)
       .selectAll('text')
       .attr('dx', 5)
       .attr('dy', 12);
-  }
+      */
+  },
 
     /*
     // draw a line representing today's date
@@ -220,7 +227,7 @@ Timeline.prototype = {
     // draw the selection area
     this.brush = d3.svg.brush()
       .x(this.scales.x)
-      .extent(c.initalWindow)
+      .extent(c.initialWindow)
       .on("brush", this.display.bind(this));
 
     this.mini.append('g')
@@ -236,6 +243,7 @@ Timeline.prototype = {
 
   display: function () {
     var rects, labels
+      , self = this
       , minExtent = this.brush.extent()[0]
       , maxExtent = this.brush.extent()[1]
       , range = maxExtent - minExtent
@@ -275,10 +283,10 @@ Timeline.prototype = {
 
     rects.enter().append('rect')
       .attr('x', function(d) { return self.scales.x1(d.start); })
-      .attr('y', function(d) { return self.scales.y1(d.lane) + .1 * self.scales.y1(1) + 0.5; })
+      .attr('y', function(d) { return self.scales.y1(d.lane) + 0.1 * self.scales.y1(1) + 0.5; })
       .attr('width', function(d) { return self.scales.x1(d.end) - self.scales.x1(d.start); })
       .attr('fill', function (d) { return self.config.colors(d.class); })
-      .attr('height', function(d) { return .8 * self.scales.y1(1); })
+      .attr('height', function(d) { return 0.8 * self.scales.y1(1); })
       .attr('class', function(d) { return 'mainItem ' + d.class; });
 
     rects.exit().remove();
@@ -303,7 +311,7 @@ Timeline.prototype = {
         return self.scales.x1(Math.max(d.start, minExtent)) + 10;
       })
       .attr('y', function(d) {
-        return self.scales.y1(d.lane) + .4 * self.scales.y1(1) + 0.5;
+        return self.scales.y1(d.lane) + 0.4 * self.scales.y1(1) + 0.5;
       })
       .attr('style', function (d, e) {
         var b = this.getBBox().width;
@@ -316,7 +324,7 @@ Timeline.prototype = {
       .attr('class', 'itemLabel');
 
     labels.exit().remove();
-  }
+  },
 
   moveBrush: function () {
     var self = this;
@@ -326,6 +334,14 @@ Timeline.prototype = {
         , halfExtent = (self.brush.extent()[1] - self.brush.extent()[0]) / 2
         , start = point - halfExtent
         , end = point + halfExtent;
+
+      if (start < self.config.min) {
+        end += (self.config.min - start);
+        start = self.config.min;
+      } else if (end > self.config.max) {
+        start += self.config.max - end;
+        end = self.config.max;
+      }
 
       self.brush.extent([start, end]);
       self.display();
@@ -338,7 +354,7 @@ Timeline.prototype = {
   getPaths: function (items) {
     var paths = {}
       , d
-      , offset = .5 * this.scales.y2(1) + 0.5
+      , offset = 0.5 * this.scales.y2(1) + 0.5
       , result = [];
 
     for (var i = 0; i < this.items.length; i++) {

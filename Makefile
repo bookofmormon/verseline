@@ -1,5 +1,5 @@
 
-build: components index.js verseline.css template.js
+build: components index.js verseline.css template.js timeline.js
 	@component build --dev
 
 template.js: template.html

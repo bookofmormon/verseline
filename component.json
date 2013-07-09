@@ -12,6 +12,7 @@
   "license": "MIT",
   "main": "index.js",
   "scripts": [
+    "timeline.js",
     "index.js",
     "template.js"
   ],
