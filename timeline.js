@@ -181,6 +181,7 @@ Timeline.prototype = {
       , origin = d3.mouse(this.main[0][0])
       , rng = ext[1] - ext[0]
       , horiz = ext[0] - this.scales.x1.invert(e.wheelDeltaX)
+      , vert = ext[0] - this.scales.x1.invert(e.wheelDeltaY)
       , left = this.config.innerWidth / origin[0]
       , right = this.config.innerWidth / (this.config.innerWidth - origin[0])
       , start = ext[0]
@@ -191,9 +192,9 @@ Timeline.prototype = {
       end += horiz;
     } else {
       if (e.wheelDeltaY !== 0) {
-        if (!(rng <= 10 && e.wheelDeltaY > 0)) {
-          start += e.wheelDeltaY / left / 2;
-          end -= e.wheelDeltaY / right / 2;
+        if (!(rng <= 10 && vert > 0)) {
+          start += vert / left;
+          end -= vert / right;
           if (end - start > (this.config.max - this.config.min)) {
             end = start + (this.config.max - this.config.min);
           }
