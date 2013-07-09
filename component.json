@@ -1,0 +1,21 @@
+{
+  "name": "verseline",
+  "repo": "bookofmormon/verseline",
+  "description": "Timeline-like view of the book of mormon",
+  "version": "0.0.1",
+  "keywords": [],
+  "dependencies": {
+    "mbostock/d3": "*",
+    "gorillatron/extend": "*"
+  },
+  "development": {},
+  "license": "MIT",
+  "main": "index.js",
+  "scripts": [
+    "index.js",
+    "template.js"
+  ],
+  "styles": [
+    "verseline.css"
+  ]
+}
