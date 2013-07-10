@@ -6,7 +6,9 @@
   "keywords": [],
   "dependencies": {
     "mbostock/d3": "*",
-    "gorillatron/extend": "*"
+    "gorillatron/extend": "*",
+    "component/tip": "*",
+    "component/aurora-tip": "*"
   },
   "development": {},
   "license": "MIT",

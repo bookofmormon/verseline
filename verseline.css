@@ -1,3 +1,23 @@
+g.main text {
+  pointer-events: none;
+}
+
+.versetip {
+  pointer-events: none;
+}
+
+.versetip .tip-arrow {
+  display: none;
+}
+
+.versetip {
+  max-width: 200px;
+}
+
+.versetip .tip-inner {
+  text-align: justify;
+}
+
 .chart {
   shape-rendering: crispEdges;
 }

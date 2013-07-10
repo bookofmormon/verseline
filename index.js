@@ -31,6 +31,17 @@ function numv(objs) {
   return objs;
 }
 
+function getData(files, next, items) {
+  items = items || [];
+  if (!files.length) {
+    return next(items);
+  }
+  d3.csv(files[0], function (data) {
+    numv(data);
+    return getData(files.slice(1), next, items.concat(data));
+  });
+}
+
 var timeline;
 
 d3.csv('verses.csv', function (verses) {
@@ -57,8 +68,7 @@ d3.csv('verses.csv', function (verses) {
   d3.csv('lanes.csv', function (lanes) {
     numb(lanes);
 
-    d3.csv('data.csv', function (items) {
-      numv(items);
+    getData(['data.csv', 'book.csv'], function (items) {
 
       d3.csv('books.csv', function (books) {
         numbk(books);
@@ -68,11 +78,7 @@ d3.csv('verses.csv', function (verses) {
           max: +verses[verses.length - 1].id,
           tickFormat: fverse,
           initialWindow: [verses[0].id, verses[1000].id],
-          ticks: [
-            [verseExtent / 10, 10, fbook],
-            [verseExtent / 50, 10, fchapter],
-            [0, 10, fverse]
-          ]
+          ticks: false
         });
       });
 
